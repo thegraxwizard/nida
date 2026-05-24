@@ -1,0 +1,673 @@
+module multi-speciality-hospital-network {
+  yang-version 1.1;
+  namespace "urn:srm:nida:multi-speciality-hospital-network";
+  prefix msh;
+
+  import ietf-inet-types {
+    prefix inet;
+    reference
+      "RFC 6991: Common YANG Data Types";
+  }
+
+  organization
+    "SRM Institute of Science and Technology";
+  contact
+    "21IPE301J - Network Infrastructure Design and Applications";
+  description
+    "YANG model for configuration management of a multi-speciality
+     hospital network. It models wards, operation theatre, ICU,
+     ambulances, OP and emergency departments, reception, pharmacy, and
+     canteen services, including patient registration and status actions.";
+
+  revision 2026-04-26 {
+    description
+      "Initial assignment version.";
+  }
+
+  typedef unit-status {
+    type enumeration {
+      enum active {
+        description "The unit is operational.";
+      }
+      enum inactive {
+        description "The unit is administratively inactive.";
+      }
+      enum maintenance {
+        description "The unit is under maintenance.";
+      }
+      enum full {
+        description "The unit has no currently available capacity.";
+      }
+      enum unreachable {
+        description "The network controller cannot reach the unit.";
+      }
+    }
+    description
+      "Common status values for hospital network units.";
+  }
+
+  typedef ward-type {
+    type enumeration {
+      enum single;
+      enum twin-sharing;
+      enum triple-sharing;
+      enum quadruple-sharing;
+    }
+    description
+      "IP ward occupancy category.";
+  }
+
+  typedef patient-state {
+    type enumeration {
+      enum registered;
+      enum admitted;
+      enum follow-up;
+      enum discharged;
+      enum referred;
+    }
+    description
+      "Lifecycle state for a patient record.";
+  }
+
+  grouping managed-unit {
+    description
+      "Common GET/SET attributes for hospital network objects.";
+    leaf id {
+      type string;
+      mandatory true;
+      description "Unit or device identifier.";
+    }
+    leaf ip-address {
+      type inet:ip-address;
+      mandatory true;
+      description "Management IP address. Uses the common ietf-inet-types module.";
+    }
+    leaf status {
+      type unit-status;
+      default "active";
+      description "Administrative or operational status.";
+    }
+  }
+
+  grouping status-actions {
+    description
+      "Actions used to operate or query a managed hospital unit.";
+
+    action switch-off {
+      description
+        "Administratively switch off or deactivate this hospital unit.";
+      input {
+        leaf reason {
+          type string;
+          description "Reason for deactivation.";
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+        leaf status {
+          type unit-status;
+        }
+      }
+    }
+
+    action get-status {
+      description
+        "Return the status and IP address of this hospital unit.";
+      output {
+        leaf id {
+          type string;
+        }
+        leaf ip-address {
+          type inet:ip-address;
+        }
+        leaf status {
+          type unit-status;
+        }
+      }
+    }
+  }
+
+  grouping patient-actions {
+    description
+      "Actions for OP ward, emergency ward, and reception workflows.";
+
+    action register-patient {
+      description
+        "Register a patient at this unit.";
+      input {
+        leaf patient-id {
+          type string;
+          mandatory true;
+        }
+        leaf patient-name {
+          type string;
+          mandatory true;
+        }
+        leaf age {
+          type uint8 {
+            range "0..120";
+          }
+        }
+        leaf department {
+          type string;
+          description "Target department or speciality.";
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+        leaf patient-id {
+          type string;
+        }
+        leaf state {
+          type patient-state;
+        }
+      }
+    }
+
+    action admit-patient {
+      description
+        "Admit a registered patient.";
+      input {
+        leaf patient-id {
+          type string;
+          mandatory true;
+        }
+        leaf assigned-unit-id {
+          type string;
+          description "Ward, ICU, OT, or emergency unit assigned to the patient.";
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+        leaf state {
+          type patient-state;
+        }
+      }
+    }
+
+    action follow-up-patient {
+      description
+        "Record or schedule a patient follow-up.";
+      input {
+        leaf patient-id {
+          type string;
+          mandatory true;
+        }
+        leaf follow-up-notes {
+          type string;
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+        leaf state {
+          type patient-state;
+        }
+      }
+    }
+
+    action get-patient-details {
+      description
+        "Fetch patient details from this unit.";
+      input {
+        leaf patient-id {
+          type string;
+          mandatory true;
+        }
+      }
+      output {
+        leaf patient-id {
+          type string;
+        }
+        leaf patient-name {
+          type string;
+        }
+        leaf state {
+          type patient-state;
+        }
+        leaf assigned-unit-id {
+          type string;
+        }
+      }
+    }
+  }
+
+  container hospital-network {
+    description
+      "Root object for managed multi-speciality hospital deployments.";
+
+    list hospital {
+      key "hospital-id";
+      description
+        "A configurable hospital object. Creating or deleting this list entry
+         creates or deletes the hospital network object.";
+
+      leaf hospital-id {
+        type string;
+        description "Unique hospital object identifier.";
+      }
+      leaf hospital-name {
+        type string;
+        mandatory true;
+      }
+      leaf controller-ip-address {
+        type inet:ip-address;
+        mandatory true;
+      }
+      leaf status {
+        type unit-status;
+        default "active";
+      }
+
+      container ip-wards {
+        description "Set of in-patient wards.";
+        list ward {
+          key "ward-id";
+          description
+            "Configurable IP ward instance.";
+          leaf ward-id {
+            type string;
+          }
+          uses managed-unit;
+          leaf ward-type {
+            type ward-type;
+            mandatory true;
+          }
+          leaf air-conditioned {
+            type boolean;
+            default "false";
+            description "True for aircon wards and false for non-aircon wards.";
+          }
+          container facilities {
+            must "(../ward-type = 'single' and bed-count = 1) or " +
+                 "(../ward-type = 'twin-sharing' and bed-count = 2) or " +
+                 "(../ward-type = 'triple-sharing' and bed-count = 3) or " +
+                 "(../ward-type = 'quadruple-sharing' and bed-count = 4)" {
+              error-message
+                "bed-count must match ward-type.";
+              description
+                "Facility availability varies based on the ward type.";
+            }
+            leaf bed-count {
+              type uint8 {
+                range "1..4";
+              }
+              mandatory true;
+            }
+            leaf oxygen-supply {
+              type boolean;
+              default "true";
+            }
+            leaf attendant-chair-count {
+              type uint8;
+              default "1";
+            }
+            leaf nurse-call-system {
+              type boolean;
+              default "true";
+            }
+            leaf washroom-attached {
+              type boolean;
+              default "true";
+            }
+          }
+          uses status-actions;
+        }
+      }
+
+      container operation-theatre {
+        description "Operation Theatre facility.";
+        uses managed-unit;
+        leaf operation-table-count {
+          type uint8;
+          default "1";
+        }
+        leaf anesthesia-cart {
+          type boolean;
+          default "true";
+        }
+        leaf oxygen-supply {
+          type boolean;
+          default "true";
+        }
+        leaf lightings {
+          type boolean;
+          default "true";
+        }
+        leaf endoscoping-device {
+          type boolean;
+          default "true";
+        }
+        leaf monitoring-device {
+          type boolean;
+          default "true";
+        }
+        uses status-actions;
+      }
+
+      container icu {
+        description "Intensive Care Unit.";
+        uses managed-unit;
+        leaf cardiac-monitor-count {
+          type uint16;
+        }
+        leaf ventilator-count {
+          type uint16;
+        }
+        leaf infusion-pump-count {
+          type uint16;
+        }
+        leaf syringe-pump-count {
+          type uint16;
+        }
+        leaf suction-machine-count {
+          type uint16;
+        }
+        leaf oxygen {
+          type boolean;
+          default "true";
+        }
+        leaf intravenous-line-count {
+          type uint16;
+        }
+        leaf feeding-tube-count {
+          type uint16;
+        }
+        leaf nasogastric-tube-count {
+          type uint16;
+        }
+        leaf drain-count {
+          type uint16;
+        }
+        leaf catheter-count {
+          type uint16;
+        }
+        leaf emergency-drug-kit-count {
+          type uint16;
+        }
+        uses status-actions;
+      }
+
+      container ambulances {
+        description "Set of network-managed ambulances.";
+        list ambulance {
+          key "ambulance-id";
+          leaf ambulance-id {
+            type string;
+          }
+          uses managed-unit;
+          leaf registration-number {
+            type string;
+            mandatory true;
+          }
+          leaf driver-name {
+            type string;
+          }
+          leaf gps-enabled {
+            type boolean;
+            default "true";
+          }
+          leaf oxygen-supply {
+            type boolean;
+            default "true";
+          }
+          leaf life-support {
+            type boolean;
+            default "false";
+          }
+          uses status-actions;
+        }
+      }
+
+      container op-ward {
+        description "Out-patient ward for registration, admit, and follow-up.";
+        uses managed-unit;
+        uses patient-actions;
+        uses status-actions;
+      }
+
+      container emergency-ward {
+        description "Emergency ward for registration, admit, and follow-up.";
+        uses managed-unit;
+        leaf triage-enabled {
+          type boolean;
+          default "true";
+        }
+        uses patient-actions;
+        uses status-actions;
+      }
+
+      container reception {
+        description "Reception desk to register and route patients.";
+        uses managed-unit;
+        leaf token-system-enabled {
+          type boolean;
+          default "true";
+        }
+        uses patient-actions;
+        action route-patient {
+          description "Route a registered patient to a target hospital unit.";
+          input {
+            leaf patient-id {
+              type string;
+              mandatory true;
+            }
+            leaf target-unit-id {
+              type string;
+              mandatory true;
+            }
+          }
+          output {
+            leaf result {
+              type string;
+            }
+            leaf routed-to {
+              type string;
+            }
+          }
+        }
+        uses status-actions;
+      }
+
+      container pharmacy {
+        description "Hospital pharmacy.";
+        uses managed-unit;
+        leaf medicine-stock-count {
+          type uint32;
+        }
+        leaf e-prescription-enabled {
+          type boolean;
+          default "true";
+        }
+        uses status-actions;
+      }
+
+      container canteen {
+        description "Hospital canteen.";
+        uses managed-unit;
+        leaf seating-capacity {
+          type uint16;
+        }
+        leaf online-ordering-enabled {
+          type boolean;
+          default "false";
+        }
+        uses status-actions;
+      }
+
+      list patient {
+        key "patient-id";
+        description
+          "Patient records created by registration actions and available for
+           GET/SET through configuration management.";
+        leaf patient-id {
+          type string;
+        }
+        leaf patient-name {
+          type string;
+          mandatory true;
+        }
+        leaf age {
+          type uint8 {
+            range "0..120";
+          }
+        }
+        leaf state {
+          type patient-state;
+          default "registered";
+        }
+        leaf assigned-unit-id {
+          type string;
+        }
+      }
+    }
+  }
+
+  rpc create-hospital-object {
+    description
+      "Create a top-level hospital network object.";
+    input {
+      leaf hospital-id {
+        type string;
+        mandatory true;
+      }
+      leaf hospital-name {
+        type string;
+        mandatory true;
+      }
+      leaf controller-ip-address {
+        type inet:ip-address;
+        mandatory true;
+      }
+    }
+    output {
+      leaf result {
+        type string;
+      }
+      leaf hospital-id {
+        type string;
+      }
+    }
+  }
+
+  rpc register-patient {
+    description
+      "Register a patient at the hospital level.";
+    input {
+      leaf hospital-id {
+        type string;
+        mandatory true;
+      }
+      leaf patient-id {
+        type string;
+        mandatory true;
+      }
+      leaf patient-name {
+        type string;
+        mandatory true;
+      }
+      leaf department {
+        type string;
+      }
+    }
+    output {
+      leaf result {
+        type string;
+      }
+      leaf patient-id {
+        type string;
+      }
+      leaf state {
+        type patient-state;
+      }
+    }
+  }
+
+  rpc get-patient-details {
+    description
+      "Fetch hospital-level patient details.";
+    input {
+      leaf hospital-id {
+        type string;
+        mandatory true;
+      }
+      leaf patient-id {
+        type string;
+        mandatory true;
+      }
+    }
+    output {
+      leaf patient-id {
+        type string;
+      }
+      leaf patient-name {
+        type string;
+      }
+      leaf state {
+        type patient-state;
+      }
+      leaf assigned-unit-id {
+        type string;
+      }
+    }
+  }
+
+  rpc switch-off-unit {
+    description
+      "Switch off a hospital unit by identifier.";
+    input {
+      leaf hospital-id {
+        type string;
+        mandatory true;
+      }
+      leaf unit-id {
+        type string;
+        mandatory true;
+      }
+      leaf reason {
+        type string;
+      }
+    }
+    output {
+      leaf result {
+        type string;
+      }
+      leaf status {
+        type unit-status;
+      }
+    }
+  }
+
+  rpc get-status {
+    description
+      "Return status for a hospital unit.";
+    input {
+      leaf hospital-id {
+        type string;
+        mandatory true;
+      }
+      leaf unit-id {
+        type string;
+        mandatory true;
+      }
+    }
+    output {
+      leaf id {
+        type string;
+      }
+      leaf ip-address {
+        type inet:ip-address;
+      }
+      leaf status {
+        type unit-status;
+      }
+    }
+  }
+}
