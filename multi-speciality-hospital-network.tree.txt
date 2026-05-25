@@ -1,0 +1,337 @@
+module: multi-speciality-hospital-network
+  +--rw hospital-network
+     +--rw hospital* [hospital-id]
+        +--rw hospital-id              string
+        +--rw hospital-name            string
+        +--rw controller-ip-address    inet:ip-address
+        +--rw status?                  unit-status
+        +--rw ip-wards
+        |  +--rw ward* [ward-id]
+        |     +--rw ward-id            string
+        |     +--rw id                 string
+        |     +--rw ip-address         inet:ip-address
+        |     +--rw status?            unit-status
+        |     +--rw ward-type          ward-type
+        |     +--rw air-conditioned?   boolean
+        |     +--rw facilities
+        |     |  +--rw bed-count                uint8
+        |     |  +--rw oxygen-supply?           boolean
+        |     |  +--rw attendant-chair-count?   uint8
+        |     |  +--rw nurse-call-system?       boolean
+        |     |  +--rw washroom-attached?       boolean
+        |     +---x switch-off
+        |     |  +---w input
+        |     |  |  +---w reason?   string
+        |     |  +--ro output
+        |     |     +--ro result?   string
+        |     |     +--ro status?   unit-status
+        |     +---x get-status
+        |        +--ro output
+        |           +--ro id?           string
+        |           +--ro ip-address?   inet:ip-address
+        |           +--ro status?       unit-status
+        +--rw operation-theatre
+        |  +--rw id                       string
+        |  +--rw ip-address               inet:ip-address
+        |  +--rw status?                  unit-status
+        |  +--rw operation-table-count?   uint8
+        |  +--rw anesthesia-cart?         boolean
+        |  +--rw oxygen-supply?           boolean
+        |  +--rw lightings?               boolean
+        |  +--rw endoscoping-device?      boolean
+        |  +--rw monitoring-device?       boolean
+        |  +---x switch-off
+        |  |  +---w input
+        |  |  |  +---w reason?   string
+        |  |  +--ro output
+        |  |     +--ro result?   string
+        |  |     +--ro status?   unit-status
+        |  +---x get-status
+        |     +--ro output
+        |        +--ro id?           string
+        |        +--ro ip-address?   inet:ip-address
+        |        +--ro status?       unit-status
+        +--rw icu
+        |  +--rw id                          string
+        |  +--rw ip-address                  inet:ip-address
+        |  +--rw status?                     unit-status
+        |  +--rw cardiac-monitor-count?      uint16
+        |  +--rw ventilator-count?           uint16
+        |  +--rw infusion-pump-count?        uint16
+        |  +--rw syringe-pump-count?         uint16
+        |  +--rw suction-machine-count?      uint16
+        |  +--rw oxygen?                     boolean
+        |  +--rw intravenous-line-count?     uint16
+        |  +--rw feeding-tube-count?         uint16
+        |  +--rw nasogastric-tube-count?     uint16
+        |  +--rw drain-count?                uint16
+        |  +--rw catheter-count?             uint16
+        |  +--rw emergency-drug-kit-count?   uint16
+        |  +---x switch-off
+        |  |  +---w input
+        |  |  |  +---w reason?   string
+        |  |  +--ro output
+        |  |     +--ro result?   string
+        |  |     +--ro status?   unit-status
+        |  +---x get-status
+        |     +--ro output
+        |        +--ro id?           string
+        |        +--ro ip-address?   inet:ip-address
+        |        +--ro status?       unit-status
+        +--rw ambulances
+        |  +--rw ambulance* [ambulance-id]
+        |     +--rw ambulance-id           string
+        |     +--rw id                     string
+        |     +--rw ip-address             inet:ip-address
+        |     +--rw status?                unit-status
+        |     +--rw registration-number    string
+        |     +--rw driver-name?           string
+        |     +--rw gps-enabled?           boolean
+        |     +--rw oxygen-supply?         boolean
+        |     +--rw life-support?          boolean
+        |     +---x switch-off
+        |     |  +---w input
+        |     |  |  +---w reason?   string
+        |     |  +--ro output
+        |     |     +--ro result?   string
+        |     |     +--ro status?   unit-status
+        |     +---x get-status
+        |        +--ro output
+        |           +--ro id?           string
+        |           +--ro ip-address?   inet:ip-address
+        |           +--ro status?       unit-status
+        +--rw op-ward
+        |  +--rw id                     string
+        |  +--rw ip-address             inet:ip-address
+        |  +--rw status?                unit-status
+        |  +---x register-patient
+        |  |  +---w input
+        |  |  |  +---w patient-id      string
+        |  |  |  +---w patient-name    string
+        |  |  |  +---w age?            uint8
+        |  |  |  +---w department?     string
+        |  |  +--ro output
+        |  |     +--ro result?       string
+        |  |     +--ro patient-id?   string
+        |  |     +--ro state?        patient-state
+        |  +---x admit-patient
+        |  |  +---w input
+        |  |  |  +---w patient-id          string
+        |  |  |  +---w assigned-unit-id?   string
+        |  |  +--ro output
+        |  |     +--ro result?   string
+        |  |     +--ro state?    patient-state
+        |  +---x follow-up-patient
+        |  |  +---w input
+        |  |  |  +---w patient-id         string
+        |  |  |  +---w follow-up-notes?   string
+        |  |  +--ro output
+        |  |     +--ro result?   string
+        |  |     +--ro state?    patient-state
+        |  +---x get-patient-details
+        |  |  +---w input
+        |  |  |  +---w patient-id    string
+        |  |  +--ro output
+        |  |     +--ro patient-id?         string
+        |  |     +--ro patient-name?       string
+        |  |     +--ro state?              patient-state
+        |  |     +--ro assigned-unit-id?   string
+        |  +---x switch-off
+        |  |  +---w input
+        |  |  |  +---w reason?   string
+        |  |  +--ro output
+        |  |     +--ro result?   string
+        |  |     +--ro status?   unit-status
+        |  +---x get-status
+        |     +--ro output
+        |        +--ro id?           string
+        |        +--ro ip-address?   inet:ip-address
+        |        +--ro status?       unit-status
+        +--rw emergency-ward
+        |  +--rw id                     string
+        |  +--rw ip-address             inet:ip-address
+        |  +--rw status?                unit-status
+        |  +--rw triage-enabled?        boolean
+        |  +---x register-patient
+        |  |  +---w input
+        |  |  |  +---w patient-id      string
+        |  |  |  +---w patient-name    string
+        |  |  |  +---w age?            uint8
+        |  |  |  +---w department?     string
+        |  |  +--ro output
+        |  |     +--ro result?       string
+        |  |     +--ro patient-id?   string
+        |  |     +--ro state?        patient-state
+        |  +---x admit-patient
+        |  |  +---w input
+        |  |  |  +---w patient-id          string
+        |  |  |  +---w assigned-unit-id?   string
+        |  |  +--ro output
+        |  |     +--ro result?   string
+        |  |     +--ro state?    patient-state
+        |  +---x follow-up-patient
+        |  |  +---w input
+        |  |  |  +---w patient-id         string
+        |  |  |  +---w follow-up-notes?   string
+        |  |  +--ro output
+        |  |     +--ro result?   string
+        |  |     +--ro state?    patient-state
+        |  +---x get-patient-details
+        |  |  +---w input
+        |  |  |  +---w patient-id    string
+        |  |  +--ro output
+        |  |     +--ro patient-id?         string
+        |  |     +--ro patient-name?       string
+        |  |     +--ro state?              patient-state
+        |  |     +--ro assigned-unit-id?   string
+        |  +---x switch-off
+        |  |  +---w input
+        |  |  |  +---w reason?   string
+        |  |  +--ro output
+        |  |     +--ro result?   string
+        |  |     +--ro status?   unit-status
+        |  +---x get-status
+        |     +--ro output
+        |        +--ro id?           string
+        |        +--ro ip-address?   inet:ip-address
+        |        +--ro status?       unit-status
+        +--rw reception
+        |  +--rw id                      string
+        |  +--rw ip-address              inet:ip-address
+        |  +--rw status?                 unit-status
+        |  +--rw token-system-enabled?   boolean
+        |  +---x register-patient
+        |  |  +---w input
+        |  |  |  +---w patient-id      string
+        |  |  |  +---w patient-name    string
+        |  |  |  +---w age?            uint8
+        |  |  |  +---w department?     string
+        |  |  +--ro output
+        |  |     +--ro result?       string
+        |  |     +--ro patient-id?   string
+        |  |     +--ro state?        patient-state
+        |  +---x admit-patient
+        |  |  +---w input
+        |  |  |  +---w patient-id          string
+        |  |  |  +---w assigned-unit-id?   string
+        |  |  +--ro output
+        |  |     +--ro result?   string
+        |  |     +--ro state?    patient-state
+        |  +---x follow-up-patient
+        |  |  +---w input
+        |  |  |  +---w patient-id         string
+        |  |  |  +---w follow-up-notes?   string
+        |  |  +--ro output
+        |  |     +--ro result?   string
+        |  |     +--ro state?    patient-state
+        |  +---x get-patient-details
+        |  |  +---w input
+        |  |  |  +---w patient-id    string
+        |  |  +--ro output
+        |  |     +--ro patient-id?         string
+        |  |     +--ro patient-name?       string
+        |  |     +--ro state?              patient-state
+        |  |     +--ro assigned-unit-id?   string
+        |  +---x route-patient
+        |  |  +---w input
+        |  |  |  +---w patient-id        string
+        |  |  |  +---w target-unit-id    string
+        |  |  +--ro output
+        |  |     +--ro result?      string
+        |  |     +--ro routed-to?   string
+        |  +---x switch-off
+        |  |  +---w input
+        |  |  |  +---w reason?   string
+        |  |  +--ro output
+        |  |     +--ro result?   string
+        |  |     +--ro status?   unit-status
+        |  +---x get-status
+        |     +--ro output
+        |        +--ro id?           string
+        |        +--ro ip-address?   inet:ip-address
+        |        +--ro status?       unit-status
+        +--rw pharmacy
+        |  +--rw id                        string
+        |  +--rw ip-address                inet:ip-address
+        |  +--rw status?                   unit-status
+        |  +--rw medicine-stock-count?     uint32
+        |  +--rw e-prescription-enabled?   boolean
+        |  +---x switch-off
+        |  |  +---w input
+        |  |  |  +---w reason?   string
+        |  |  +--ro output
+        |  |     +--ro result?   string
+        |  |     +--ro status?   unit-status
+        |  +---x get-status
+        |     +--ro output
+        |        +--ro id?           string
+        |        +--ro ip-address?   inet:ip-address
+        |        +--ro status?       unit-status
+        +--rw canteen
+        |  +--rw id                         string
+        |  +--rw ip-address                 inet:ip-address
+        |  +--rw status?                    unit-status
+        |  +--rw seating-capacity?          uint16
+        |  +--rw online-ordering-enabled?   boolean
+        |  +---x switch-off
+        |  |  +---w input
+        |  |  |  +---w reason?   string
+        |  |  +--ro output
+        |  |     +--ro result?   string
+        |  |     +--ro status?   unit-status
+        |  +---x get-status
+        |     +--ro output
+        |        +--ro id?           string
+        |        +--ro ip-address?   inet:ip-address
+        |        +--ro status?       unit-status
+        +--rw patient* [patient-id]
+           +--rw patient-id          string
+           +--rw patient-name        string
+           +--rw age?                uint8
+           +--rw state?              patient-state
+           +--rw assigned-unit-id?   string
+
+  rpcs:
+    +---x create-hospital-object
+    |  +---w input
+    |  |  +---w hospital-id              string
+    |  |  +---w hospital-name            string
+    |  |  +---w controller-ip-address    inet:ip-address
+    |  +--ro output
+    |     +--ro result?        string
+    |     +--ro hospital-id?   string
+    +---x register-patient
+    |  +---w input
+    |  |  +---w hospital-id     string
+    |  |  +---w patient-id      string
+    |  |  +---w patient-name    string
+    |  |  +---w department?     string
+    |  +--ro output
+    |     +--ro result?       string
+    |     +--ro patient-id?   string
+    |     +--ro state?        patient-state
+    +---x get-patient-details
+    |  +---w input
+    |  |  +---w hospital-id    string
+    |  |  +---w patient-id     string
+    |  +--ro output
+    |     +--ro patient-id?         string
+    |     +--ro patient-name?       string
+    |     +--ro state?              patient-state
+    |     +--ro assigned-unit-id?   string
+    +---x switch-off-unit
+    |  +---w input
+    |  |  +---w hospital-id    string
+    |  |  +---w unit-id        string
+    |  |  +---w reason?        string
+    |  +--ro output
+    |     +--ro result?   string
+    |     +--ro status?   unit-status
+    +---x get-status
+       +---w input
+       |  +---w hospital-id    string
+       |  +---w unit-id        string
+       +--ro output
+          +--ro id?           string
+          +--ro ip-address?   inet:ip-address
+          +--ro status?       unit-status
