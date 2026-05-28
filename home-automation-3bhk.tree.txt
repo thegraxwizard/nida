@@ -1,0 +1,68 @@
+module: home-automation-3bhk
+  +--rw home-automation
+     +--rw apartment* [apartment-id]
+        +--rw apartment-id             string
+        +--rw apartment-type?          enumeration
+        +--rw controller-ip-address    inet:ip-address
+        +--rw controller-status?       appliance-status
+        +--rw room* [room-id]
+           +--rw room-id      string
+           +--rw name         string
+           +--rw type         room-type
+           +--rw floor?       uint8
+           +--rw appliance* [appliance-id]
+              +--rw appliance-id                  string
+              +--rw type                          appliance-type
+              +--rw id                            string
+              +--rw ip-address                    inet:ip-address
+              +--rw status?                       appliance-status
+              +--rw friendly-name?                string
+              +--rw fan-speed?                    uint8
+              +--rw target-temperature-celsius?   decimal64
+              +--rw power-consumption-watts?      uint32
+              +---x switch-on
+              |  +---w input
+              |  |  +---w requested-by?   string
+              |  +--ro output
+              |     +--ro result?   string
+              |     +--ro status?   appliance-status
+              +---x switch-off
+              |  +---w input
+              |  |  +---w requested-by?   string
+              |  +--ro output
+              |     +--ro result?   string
+              |     +--ro status?   appliance-status
+              +---x set-fan-speed
+              |  +---w input
+              |  |  +---w speed    uint8
+              |  +--ro output
+              |     +--ro result?          string
+              |     +--ro applied-speed?   uint8
+              +---x set-temperature
+              |  +---w input
+              |  |  +---w temperature-celsius    decimal64
+              |  +--ro output
+              |     +--ro result?                        string
+              |     +--ro applied-temperature-celsius?   decimal64
+              +---x get-status
+                 +--ro output
+                    +--ro id?           string
+                    +--ro status?       appliance-status
+                    +--ro ip-address?   inet:ip-address
+
+  rpcs:
+    +---x create-home-automation-object
+    |  +---w input
+    |  |  +---w apartment-id             string
+    |  |  +---w controller-ip-address    inet:ip-address
+    |  +--ro output
+    |     +--ro result?         string
+    |     +--ro apartment-id?   string
+    +---x get-appliance-status
+       +---w input
+       |  +---w apartment-id    string
+       |  +---w room-id         string
+       |  +---w appliance-id    string
+       +--ro output
+          +--ro status?       appliance-status
+          +--ro ip-address?   inet:ip-address
