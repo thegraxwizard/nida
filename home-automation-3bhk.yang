@@ -1,0 +1,377 @@
+module home-automation-3bhk {
+  yang-version 1.1;
+  namespace "urn:srm:nida:home-automation-3bhk";
+  prefix ha;
+
+  import ietf-inet-types {
+    prefix inet;
+    reference
+      "RFC 6991: Common YANG Data Types";
+  }
+
+  organization
+    "SRM Institute of Science and Technology";
+  contact
+    "21IPE301J - Network Infrastructure Design and Applications";
+  description
+    "YANG model for configuration management of a 3 BHK smart home
+     automation deployment. The model supports creation and deletion of
+     apartments, rooms, rest-rooms, kitchens, and appliance instances.
+     Each appliance exposes configurable identity, IP address, status,
+     and controls, along with actions for common device operations.";
+
+  revision 2026-04-26 {
+    description
+      "Initial assignment version.";
+  }
+
+  typedef appliance-status {
+    type enumeration {
+      enum off {
+        description "The appliance is powered off.";
+      }
+      enum on {
+        description "The appliance is powered on.";
+      }
+      enum standby {
+        description "The appliance is ready but not actively operating.";
+      }
+      enum fault {
+        description "The appliance has reported a fault.";
+      }
+      enum unreachable {
+        description "The controller cannot reach the appliance.";
+      }
+    }
+    description
+      "Common administrative and operational status values for smart
+       appliances.";
+  }
+
+  typedef appliance-type {
+    type enumeration {
+      enum led-bulb;
+      enum fan;
+      enum aircon;
+      enum fridge;
+      enum washing-machine;
+      enum geyser;
+      enum hob;
+      enum chimney;
+      enum oven;
+      enum television;
+      enum other;
+    }
+    description
+      "Supported appliance categories in the apartment.";
+  }
+
+  typedef room-type {
+    type enumeration {
+      enum bedroom;
+      enum hall;
+      enum kitchen;
+      enum rest-room;
+      enum utility;
+      enum balcony;
+      enum other;
+    }
+    description
+      "Logical area of the 3 BHK apartment.";
+  }
+
+  grouping device-common-attributes {
+    description
+      "Common GET/SET attributes for every managed object.";
+    leaf id {
+      type string;
+      mandatory true;
+      description
+        "Human-readable object identifier.";
+    }
+    leaf ip-address {
+      type inet:ip-address;
+      mandatory true;
+      description
+        "Management IP address. Uses the common ietf-inet-types module.";
+    }
+    leaf status {
+      type appliance-status;
+      default "off";
+      description
+        "Current configured or last-known status.";
+    }
+  }
+
+  grouping appliance-actions {
+    description
+      "Actions available on each appliance instance.";
+
+    action switch-on {
+      description
+        "Switch on the selected appliance instance.";
+      input {
+        leaf requested-by {
+          type string;
+          description "User or automation rule requesting the action.";
+        }
+      }
+      output {
+        leaf result {
+          type string;
+          description "Action execution result.";
+        }
+        leaf status {
+          type appliance-status;
+          description "Status after the action completes.";
+        }
+      }
+    }
+
+    action switch-off {
+      description
+        "Switch off the selected appliance instance.";
+      input {
+        leaf requested-by {
+          type string;
+          description "User or automation rule requesting the action.";
+        }
+      }
+      output {
+        leaf result {
+          type string;
+          description "Action execution result.";
+        }
+        leaf status {
+          type appliance-status;
+          description "Status after the action completes.";
+        }
+      }
+    }
+
+    action set-fan-speed {
+      description
+        "Set the speed for a fan appliance.";
+      input {
+        leaf speed {
+          type uint8 {
+            range "0..5";
+          }
+          mandatory true;
+          description "Fan speed level, where 0 means stopped.";
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+        leaf applied-speed {
+          type uint8 {
+            range "0..5";
+          }
+        }
+      }
+    }
+
+    action set-temperature {
+      description
+        "Set a target temperature for aircon, fridge, or geyser.";
+      input {
+        leaf temperature-celsius {
+          type decimal64 {
+            fraction-digits 1;
+            range "-30.0..80.0";
+          }
+          mandatory true;
+          description "Requested target temperature in Celsius.";
+        }
+      }
+      output {
+        leaf result {
+          type string;
+        }
+        leaf applied-temperature-celsius {
+          type decimal64 {
+            fraction-digits 1;
+            range "-30.0..80.0";
+          }
+        }
+      }
+    }
+
+    action get-status {
+      description
+        "Return the current status of the selected appliance.";
+      output {
+        leaf id {
+          type string;
+        }
+        leaf status {
+          type appliance-status;
+        }
+        leaf ip-address {
+          type inet:ip-address;
+        }
+      }
+    }
+  }
+
+  container home-automation {
+    description
+      "Root object for managed home automation deployments.";
+
+    list apartment {
+      key "apartment-id";
+      description
+        "A configurable smart home automation object. Creating or
+         deleting a list entry creates or deletes the apartment instance.";
+
+      leaf apartment-id {
+        type string;
+        description "Unique apartment identifier.";
+      }
+      leaf apartment-type {
+        type enumeration {
+          enum three-bhk;
+        }
+        default "three-bhk";
+        description "Apartment layout represented by this model.";
+      }
+      leaf controller-ip-address {
+        type inet:ip-address;
+        mandatory true;
+        description "IP address of the home automation controller.";
+      }
+      leaf controller-status {
+        type appliance-status;
+        default "on";
+        description "Controller status.";
+      }
+
+      list room {
+        key "room-id";
+        description
+          "Room, rest-room, kitchen, or utility area in the apartment.";
+
+        leaf room-id {
+          type string;
+          description "Unique room identifier.";
+        }
+        leaf name {
+          type string;
+          mandatory true;
+          description "Display name, such as Bedroom-1 or Kitchen.";
+        }
+        leaf type {
+          type room-type;
+          mandatory true;
+          description "Room classification.";
+        }
+        leaf floor {
+          type uint8;
+          default "1";
+          description "Apartment floor number.";
+        }
+
+        list appliance {
+          key "appliance-id";
+          description
+            "Smart appliance instances. Because this list is configurable,
+             NETCONF/RESTCONF clients can create and delete appliances.";
+
+          leaf appliance-id {
+            type string;
+            description "Unique appliance identifier.";
+          }
+          leaf type {
+            type appliance-type;
+            mandatory true;
+            description "Type of appliance.";
+          }
+          uses device-common-attributes {
+            refine "id" {
+              description "Manufacturer or controller-facing appliance ID.";
+            }
+          }
+          leaf friendly-name {
+            type string;
+            description "User-facing appliance name.";
+          }
+          leaf fan-speed {
+            when "../type = 'fan'";
+            type uint8 {
+              range "0..5";
+            }
+            default "0";
+            description "Configured fan speed.";
+          }
+          leaf target-temperature-celsius {
+            when "../type = 'aircon' or ../type = 'fridge' or ../type = 'geyser'";
+            type decimal64 {
+              fraction-digits 1;
+              range "-30.0..80.0";
+            }
+            description "Configured target temperature.";
+          }
+          leaf power-consumption-watts {
+            type uint32;
+            units "watts";
+            description "Last-known power consumption.";
+          }
+
+          uses appliance-actions;
+        }
+      }
+    }
+  }
+
+  rpc create-home-automation-object {
+    description
+      "Create a top-level home automation object for a 3 BHK apartment.";
+    input {
+      leaf apartment-id {
+        type string;
+        mandatory true;
+      }
+      leaf controller-ip-address {
+        type inet:ip-address;
+        mandatory true;
+      }
+    }
+    output {
+      leaf result {
+        type string;
+      }
+      leaf apartment-id {
+        type string;
+      }
+    }
+  }
+
+  rpc get-appliance-status {
+    description
+      "Fetch the status of an appliance by apartment, room, and appliance ID.";
+    input {
+      leaf apartment-id {
+        type string;
+        mandatory true;
+      }
+      leaf room-id {
+        type string;
+        mandatory true;
+      }
+      leaf appliance-id {
+        type string;
+        mandatory true;
+      }
+    }
+    output {
+      leaf status {
+        type appliance-status;
+      }
+      leaf ip-address {
+        type inet:ip-address;
+      }
+    }
+  }
+}
